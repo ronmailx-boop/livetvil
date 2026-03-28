@@ -1,239 +1,670 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>רשימת קניות חכמה</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#7367f0">
-    <link rel="apple-touch-icon" href="icon.png">
-    
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
-    
-    <style>
-        * { box-sizing: border-box; }
-        body { font-family: system-ui, sans-serif; background: #f4f7fa; padding-bottom: 120px; overflow-x: hidden; }
-        
-        .bottom-bar { 
-            position: fixed; bottom: 0; left: 0; right: 0; 
-            background: #7367f0; z-index: 1000; padding: 10px 10px 25px 10px; border-radius: 35px 35px 0 0; 
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>טלוויזיה ישראלית חי</title>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080a0f;
+    --surface: #0e1119;
+    --surface2: #151b27;
+    --border: rgba(255,255,255,0.07);
+    --accent12: #e8a020;
+    --accent13: #3a8ef5;
+    --text: #e8eaf0;
+    --muted: #5a6478;
+    --glow12: rgba(232,160,32,0.35);
+    --glow13: rgba(58,142,245,0.35);
+  }
 
-        .item-card {
-            background: white; border-radius: 25px; padding: 15px; margin-bottom: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.03); display: flex; flex-direction: column;
-        }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .modal-overlay { 
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.5); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(2px); 
-        }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Heebo', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
 
-        .lock-btn-edit { background-color: #ff9f43 !important; }
-        .lock-btn-locked { background-color: #48a9f8 !important; }
-    </style>
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 3px,
+      rgba(0,0,0,0.08) 3px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 28px 14px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(14,17,25,0.95) 0%, transparent 100%);
+    position: relative;
+  }
+
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+
+  .logo {
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: #e05050;
+    border-radius: 50%;
+    animation: blink 1.4s ease-in-out infinite;
+    box-shadow: 0 0 6px #e05050;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .live-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #e05050;
+    border: 1px solid rgba(224,80,80,0.4);
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+
+  /* Channel selector */
+  .channel-bar {
+    display: flex;
+    gap: 12px;
+    padding: 20px 28px 0;
+    align-items: stretch;
+  }
+
+  .ch-btn {
+    position: relative;
+    flex: 1;
+    max-width: 220px;
+    padding: 18px 22px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    text-align: right;
+    overflow: hidden;
+  }
+
+  .ch-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.25s;
+    border-radius: inherit;
+  }
+
+  .ch-btn.ch12::before { background: radial-gradient(ellipse at 30% 50%, var(--glow12), transparent 70%); }
+  .ch-btn.ch13::before { background: radial-gradient(ellipse at 30% 50%, var(--glow13), transparent 70%); }
+
+  .ch-btn:hover::before,
+  .ch-btn.active::before { opacity: 1; }
+
+  .ch-btn.active.ch12 { border-color: var(--accent12); box-shadow: 0 0 20px var(--glow12), inset 0 1px 0 rgba(232,160,32,0.2); }
+  .ch-btn.active.ch13 { border-color: var(--accent13); box-shadow: 0 0 20px var(--glow13), inset 0 1px 0 rgba(58,142,245,0.2); }
+
+  .ch-btn:hover { transform: translateY(-1px); }
+
+  .ch-num {
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1;
+    position: relative;
+  }
+  .ch-btn.ch12 .ch-num { color: var(--accent12); }
+  .ch-btn.ch13 .ch-num { color: var(--accent13); }
+
+  .ch-name {
+    font-size: 0.8rem;
+    font-weight: 400;
+    color: var(--muted);
+    margin-top: 4px;
+    position: relative;
+  }
+
+  .ch-tag {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    text-transform: uppercase;
+  }
+  .ch-btn.ch12 .ch-tag { background: rgba(232,160,32,0.15); color: var(--accent12); border: 1px solid rgba(232,160,32,0.3); }
+  .ch-btn.ch13 .ch-tag { background: rgba(58,142,245,0.15); color: var(--accent13); border: 1px solid rgba(58,142,245,0.3); }
+
+  /* Video area */
+  .video-wrap {
+    flex: 1;
+    padding: 18px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .video-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #000;
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  }
+
+  video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+  }
+
+  /* Idle screen */
+  .idle-screen {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: radial-gradient(ellipse at center, #0e1525 0%, #06080d 100%);
+  }
+
+  .idle-icon {
+    font-size: 3.5rem;
+    opacity: 0.3;
+  }
+
+  .idle-text {
+    font-size: 0.9rem;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  /* Loader */
+  .loader {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.6);
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .loader.visible { display: flex; }
+
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid rgba(255,255,255,0.1);
+    border-top-color: var(--active-accent, #fff);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .loader-text {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  /* Error overlay */
+  .error-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.75);
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px;
+  }
+  .error-overlay.visible { display: flex; }
+  .error-overlay .err-icon { font-size: 2rem; }
+  .error-overlay .err-msg { font-size: 0.82rem; color: var(--muted); text-align: center; line-height: 1.6; }
+  .retry-btn {
+    margin-top: 6px;
+    padding: 8px 20px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Heebo', sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .retry-btn:hover { background: var(--surface); border-color: rgba(255,255,255,0.2); }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    color: var(--muted);
+    padding: 0 2px;
+  }
+
+  .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .status-dot.live { background: #4caf50; box-shadow: 0 0 5px #4caf50; animation: blink 2s infinite; }
+  .status-dot.loading { background: #f0a030; animation: blink 0.6s infinite; }
+  .status-dot.error { background: #e05050; }
+
+  /* Custom URL */
+  .url-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+  }
+
+  .url-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .url-input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .url-input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 14px;
+    color: var(--text);
+    font-family: 'Heebo', sans-serif;
+    font-size: 0.78rem;
+    direction: ltr;
+    text-align: left;
+    transition: border-color 0.2s;
+  }
+  .url-input:focus { outline: none; border-color: rgba(255,255,255,0.25); }
+  .url-input::placeholder { color: var(--muted); font-size: 0.72rem; }
+
+  .url-go-btn {
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-family: 'Heebo', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .url-go-btn:hover { background: rgba(255,255,255,0.07); }
+
+  /* Stream selector dots */
+  .stream-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .sdot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    opacity: 0.4;
+  }
+  .sdot.active { opacity: 1; }
+  .sdot.ch12 { background: var(--accent12); }
+  .sdot.ch13 { background: var(--accent13); }
+
+  /* Footer */
+  footer {
+    padding: 12px 28px;
+    text-align: center;
+    font-size: 0.65rem;
+    color: #2a3040;
+    border-top: 1px solid var(--border);
+  }
+</style>
 </head>
 <body>
 
-    <div id="priceModal" class="modal-overlay">
-        <div class="bg-white w-80 p-6 rounded-3xl text-center shadow-2xl">
-            <h2 class="text-lg font-bold mb-4 text-indigo-600">עדכון מחיר</h2>
-            <input type="number" id="newPriceInput" inputmode="decimal" class="w-full p-3 border rounded-xl mb-4 text-center text-xl font-bold outline-none">
-            <div class="flex gap-3">
-                <button onclick="confirmPriceUpdate()" class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl">עדכן</button>
-                <button onclick="closePriceModal()" class="flex-1 py-3 bg-gray-100 font-bold rounded-xl text-gray-600">ביטול</button>
-            </div>
-        </div>
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    טלוויזיה חי
+  </div>
+  <div class="live-badge">LIVE</div>
+</header>
+
+<div class="channel-bar">
+  <button class="ch-btn ch12" onclick="selectChannel(12)">
+    <span class="ch-tag">Keshet</span>
+    <div class="ch-num">12</div>
+    <div class="ch-name">קשת 12</div>
+  </button>
+  <button class="ch-btn ch13" onclick="selectChannel(13)">
+    <span class="ch-tag">Reshet</span>
+    <div class="ch-num">13</div>
+    <div class="ch-name">רשת 13</div>
+  </button>
+</div>
+
+<div class="video-wrap">
+  <div class="video-container" id="videoContainer">
+    <video id="video" controls playsinline></video>
+
+    <div class="idle-screen" id="idleScreen">
+      <div class="idle-icon">📺</div>
+      <div class="idle-text">בחר ערוץ לצפייה</div>
     </div>
 
-    <div id="deleteModal" class="modal-overlay">
-        <div class="bg-white w-80 p-6 rounded-3xl text-center shadow-2xl">
-            <h2 class="text-lg font-bold mb-4">למחוק את כל הרשימה?</h2>
-            <div class="flex gap-3">
-                <button onclick="confirmClearAll()" class="flex-1 py-3 bg-red-500 text-white font-bold rounded-xl">מחק הכל</button>
-                <button onclick="closeDeleteModal()" class="flex-1 py-3 bg-gray-100 font-bold rounded-xl text-gray-600">ביטול</button>
-            </div>
-        </div>
+    <div class="loader" id="loader">
+      <div class="spinner" id="spinner"></div>
+      <div class="loader-text" id="loaderText">טוען שידור...</div>
     </div>
 
-    <div class="max-w-md mx-auto p-4">
-        <div class="bg-white rounded-2xl p-4 mb-4 flex justify-between items-center shadow-sm">
-            <div>
-                <h1 class="text-xl font-bold text-slate-800">הרשימה שלי</h1>
-                <span id="statusTag" class="text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full text-[10px] font-bold mt-1 inline-block">מצב עריכה</span>
-            </div>
-            <button onclick="shareToWhatsApp()" class="p-2 text-indigo-500 bg-indigo-50 rounded-full">
-                <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.319 1.592 5.548 0 10.058-4.51 10.06-10.059.002-2.689-1.047-5.215-2.951-7.119-1.906-1.906-4.432-2.956-7.123-2.957-5.549 0-10.059 4.511-10.061 10.06-.001 2.105.56 4.111 1.621 5.895l-.997 3.638 3.732-.98zm11.367-7.404c-.3-.15-1.771-.874-2.046-.974-.275-.1-.475-.15-.675.15-.2.3-.775.974-.95 1.174-.175.2-.35.225-.65.075-.3-.15-1.265-.467-2.41-1.487-.892-.795-1.493-1.777-1.668-2.077-.175-.3-.018-.462.13-.611.134-.134.3-.35.45-.525.15-.175.2-.3.3-.5s.05-.375-.025-.525c-.075-.15-.675-1.625-.925-2.225-.244-.589-.493-.51-.675-.52l-.575-.01c-.2 0-.525.075-.8.375s-1.05 1.025-1.05 2.5 1.075 2.9 1.225 3.1c.15.2 2.115 3.23 5.125 4.53.716.31 1.274.495 1.71.635.72.23 1.375.197 1.893.12.577-.087 1.771-.725 2.021-1.425.25-.7.25-1.3.175-1.425-.075-.125-.275-.2-.575-.35z"/></svg>
-            </button>
-        </div>
-
-        <div id="inputForm" class="hidden bg-white p-5 rounded-3xl shadow-lg mb-4 border-2 border-indigo-400">
-            <input type="text" id="itemName" placeholder="שם המוצר" class="w-full p-3 border rounded-xl mb-3 outline-none">
-            <input type="number" id="itemPrice" inputmode="decimal" placeholder="מחיר" class="w-full p-3 border rounded-xl mb-3 outline-none">
-            <div class="flex gap-2">
-                <button onclick="addItem()" class="flex-1 bg-green-500 text-white py-3 rounded-xl font-bold">הוסף</button>
-                <button onclick="toggleInputForm()" class="flex-1 bg-gray-100 py-3 rounded-xl font-bold">סגור</button>
-            </div>
-        </div>
-
-        <div id="itemsList"></div>
+    <div class="error-overlay" id="errorOverlay">
+      <div class="err-icon">⚠️</div>
+      <div class="err-msg" id="errMsg">הסטרים לא זמין כרגע.<br>נסה URL ידני מטה.</div>
+      <button class="retry-btn" id="retryBtn" onclick="retryNext()">נסה סטרים אחר</button>
     </div>
+  </div>
 
-    <div class="bottom-bar text-white">
-        <div class="flex justify-around mb-4 px-4 text-center">
-            <div><div class="text-[10px] opacity-70">סה"כ</div><div class="text-xl font-bold">₪<span id="totalSum">0.00</span></div></div>
-            <div class="w-px bg-white/20 h-8 self-center"></div>
-            <div><div class="text-[10px] opacity-70">שולם</div><div class="text-xl font-bold">₪<span id="paidSum">0.00</span></div></div>
-        </div>
-        
-        <div class="flex items-center justify-around">
-            <button id="lockBtn" onclick="toggleLock()" class="w-12 h-12 lock-btn-edit rounded-full flex items-center justify-center shadow-lg active:scale-90 transition">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path id="lockPath" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>
-            </button>
-            <button onclick="toggleInputForm()" class="w-16 h-16 bg-[#28c76f] rounded-full flex items-center justify-center shadow-2xl border-4 border-white/20 active:scale-95 transition">
-                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="4" d="M12 4v16m8-8H4"></path></svg>
-            </button>
-            <button onclick="openDeleteModal()" class="w-12 h-12 bg-[#ea5455] rounded-full flex items-center justify-center shadow-lg active:scale-90 transition">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-            </button>
-        </div>
+  <div class="status-bar">
+    <div class="status-indicator">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">בחר ערוץ</span>
     </div>
+    <div class="stream-dots" id="streamDots"></div>
+  </div>
 
-    <script>
-        // Service Worker Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(err => console.log(err));
-            });
-        }
+  <div class="url-panel">
+    <div class="url-label">🔗 URL מותאם אישית (m3u8)</div>
+    <div class="url-input-row">
+      <input class="url-input" id="urlInput" type="text" placeholder="https://example.com/stream/index.m3u8" dir="ltr">
+      <button class="url-go-btn" onclick="playCustomUrl()">▶ הפעל</button>
+    </div>
+  </div>
+</div>
 
-        let shoppingList = JSON.parse(localStorage.getItem('LIST_V6')) || [];
-        let isLocked = false;
-        let currentEditIndex = null;
-        let sortableInstance = null;
+<footer>
+  שידורים ישראלים חי · הסטרימינג ניתן על ידי ערוצי השידור הרשמיים
+</footer>
 
-        function render() {
-            const container = document.getElementById('itemsList');
-            container.innerHTML = '';
-            shoppingList.forEach((item, index) => {
-                const div = document.createElement('div');
-                div.className = "item-card";
-                div.dataset.id = item.id;
-                div.innerHTML = `
-                    <div class="flex justify-between items-center mb-3">
-                        <div class="flex items-center gap-3">
-                            <input type="checkbox" ${item.checked ? 'checked' : ''} onchange="toggleCheck(${index})" class="w-6 h-6 rounded accent-indigo-600">
-                            <span class="text-xl font-bold text-slate-800 ${item.checked ? 'line-through text-slate-300' : ''}">${item.name}</span>
-                        </div>
-                        <button onclick="removeItem(${index})" class="text-red-400">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
-                    </div>
-                    <div class="flex justify-between items-center">
-                        <div class="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-2 py-1">
-                            <button onclick="updateQty(${index}, 1)" class="text-green-500 font-bold text-xl px-2">+</button>
-                            <span class="font-bold text-lg text-slate-700 min-w-[20px] text-center">${item.qty}</span>
-                            <button onclick="updateQty(${index}, -1)" class="text-red-500 font-bold text-xl px-2">-</button>
-                        </div>
-                        <div class="flex items-center gap-4">
-                            <span onclick="openPriceModal(${index})" class="text-lg font-bold text-indigo-600 cursor-pointer">₪${(item.unitPrice * item.qty).toFixed(2)}</span>
-                            <div class="drag-handle text-slate-300 text-xl cursor-grab ${isLocked ? 'hidden' : ''}">⠿</div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(div);
-            });
-            calculate();
-            initSort();
-        }
+<script>
+const STREAMS = {
+  12: [
+    // ערוץ 12 - קשת (דורש טוקן - נסה את הבסיסי)
+    'https://mako-streaming.akamaized.net/stream/hls/live/2033791/k12n12wad/index.m3u8',
+    'https://mako-streaming.akamaized.net/n12/hls/live/2103938/k12/index.m3u8',
+    'https://mako-streaming.akamaized.net/direct/hls/live/2033791/k12dvr/index.m3u8',
+  ],
+  13: [
+    'https://d18b0e6mopany4.cloudfront.net/out/v1/2f2bc414a3db4698a8e94b89eaf2da2a/index.m3u8',
+    'https://d198ztbnlup2iq.cloudfront.net/out/v1/2d9050c90fb94df8b78d1d98306a1a65/index.m3u8',
+    'https://d2xg1g9o5vns8m.cloudfront.net/out/v1/0855d703f7d5436fae6a9c7ce8ca5075/index.m3u8',
+    'https://d2xg1g9o5vns8m.cloudfront.net/out/v1/66d4ac8748ce4a9298b4e40e48d1ae2f/index.m3u8',
+  ]
+};
 
-        function initSort() {
-            const el = document.getElementById('itemsList');
-            if (sortableInstance) sortableInstance.destroy();
-            if (!isLocked) {
-                sortableInstance = Sortable.create(el, {
-                    handle: '.drag-handle', animation: 150,
-                    onEnd: (evt) => {
-                        const movedItem = shoppingList.splice(evt.oldIndex, 1)[0];
-                        shoppingList.splice(evt.newIndex, 0, movedItem);
-                        save();
-                    }
-                });
-            }
-        }
+const COLORS = { 12: '#e8a020', 13: '#3a8ef5' };
+const NAMES  = { 12: 'קשת 12', 13: 'רשת 13' };
 
-        function toggleInputForm() { 
-            const form = document.getElementById('inputForm');
-            form.classList.toggle('hidden');
-            if(!form.classList.contains('hidden')) document.getElementById('itemName').focus();
-        }
+let currentCh = null;
+let currentIdx = 0;
+let hls = null;
+let retryCount = 0;
 
-        function addItem() {
-            const name = document.getElementById('itemName').value;
-            const price = parseFloat(document.getElementById('itemPrice').value) || 0;
-            if(!name) return;
-            shoppingList.push({ id: Date.now().toString(), name, unitPrice: price, qty: 1, checked: false });
-            document.getElementById('itemName').value = '';
-            document.getElementById('itemPrice').value = '';
-            toggleInputForm();
-            save();
-        }
+const video       = document.getElementById('video');
+const idleScreen  = document.getElementById('idleScreen');
+const loader      = document.getElementById('loader');
+const spinner     = document.getElementById('spinner');
+const loaderText  = document.getElementById('loaderText');
+const errorOverlay= document.getElementById('errorOverlay');
+const statusDot   = document.getElementById('statusDot');
+const statusText  = document.getElementById('statusText');
+const streamDots  = document.getElementById('streamDots');
+const errMsg      = document.getElementById('errMsg');
 
-        function openPriceModal(index) { currentEditIndex = index; document.getElementById('newPriceInput').value = shoppingList[index].unitPrice; document.getElementById('priceModal').style.display='flex'; }
-        function closePriceModal() { document.getElementById('priceModal').style.display='none'; }
-        function confirmPriceUpdate() { 
-            shoppingList[currentEditIndex].unitPrice = parseFloat(document.getElementById('newPriceInput').value) || 0; 
-            closePriceModal(); save(); 
-        }
+function selectChannel(ch) {
+  currentCh = ch;
+  currentIdx = 0;
+  retryCount = 0;
 
-        function openDeleteModal() { if(shoppingList.length > 0) document.getElementById('deleteModal').style.display='flex'; }
-        function closeDeleteModal() { document.getElementById('deleteModal').style.display='none'; }
-        function confirmClearAll() { shoppingList = []; closeDeleteModal(); save(); }
+  // Update button states
+  document.querySelectorAll('.ch-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.ch-btn.ch' + ch).classList.add('active');
 
-        function calculate() {
-            const total = shoppingList.reduce((acc, i) => acc + (i.unitPrice * i.qty), 0);
-            const paid = shoppingList.filter(i => i.checked).reduce((acc, i) => acc + (i.unitPrice * i.qty), 0);
-            document.getElementById('totalSum').innerText = total.toFixed(2);
-            document.getElementById('paidSum').innerText = paid.toFixed(2);
-        }
+  // Spinner color
+  spinner.style.borderTopColor = COLORS[ch];
 
-        function toggleCheck(index) { shoppingList[index].checked = !shoppingList[index].checked; save(); }
-        function updateQty(index, val) { if(shoppingList[index].qty + val >= 1) { shoppingList[index].qty += val; save(); } }
-        function removeItem(index) { shoppingList.splice(index, 1); save(); }
-        function save() { localStorage.setItem('LIST_V6', JSON.stringify(shoppingList)); render(); }
-        
-        function toggleLock() {
-            isLocked = !isLocked;
-            const btn = document.getElementById('lockBtn');
-            const path = document.getElementById('lockPath');
-            const tag = document.getElementById('statusTag');
-            
-            if (isLocked) {
-                btn.className = "w-12 h-12 lock-btn-locked rounded-full flex items-center justify-center shadow-lg transition";
-                tag.innerText = "נעול";
-                tag.className = "text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full text-[10px] font-bold mt-1 inline-block";
-                path.setAttribute('d', "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z");
-            } else {
-                btn.className = "w-12 h-12 lock-btn-edit rounded-full flex items-center justify-center shadow-lg transition";
-                tag.innerText = "מצב עריכה";
-                tag.className = "text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full text-[10px] font-bold mt-1 inline-block";
-                path.setAttribute('d', "M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z");
-            }
-            render();
-        }
+  buildDots(ch);
+  loadStream(STREAMS[ch][0], ch, 0);
+}
 
-        function shareToWhatsApp() {
-            if (shoppingList.length === 0) return;
-            let text = "🛒 *רשימת הקניות שלי:*\n\n";
-            shoppingList.forEach(i => text += `${i.checked ? '✅' : '⬜'} *${i.name}* (x${i.qty}) - ₪${(i.unitPrice * i.qty).toFixed(2)}\n`);
-            text += `\n💰 *סה"כ: ₪${document.getElementById('totalSum').innerText}*`;
-            window.open("https://wa.me/?text=" + encodeURIComponent(text), '_blank');
-        }
+function buildDots(ch) {
+  const urls = STREAMS[ch];
+  streamDots.innerHTML = '';
+  urls.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'sdot ch' + ch + (i === 0 ? ' active' : '');
+    d.title = 'סטרים ' + (i + 1);
+    d.onclick = () => loadStream(STREAMS[ch][i], ch, i);
+    streamDots.appendChild(d);
+  });
+}
 
-        render();
-    </script>
+function updateDot(idx) {
+  streamDots.querySelectorAll('.sdot').forEach((d, i) => {
+    d.classList.toggle('active', i === idx);
+  });
+}
+
+function loadStream(url, ch, idx) {
+  currentIdx = idx;
+  updateDot(idx);
+  showLoader(true);
+  hideError();
+  idleScreen.style.display = 'none';
+
+  setStatus('loading', `טוען ${NAMES[ch]}...`);
+
+  if (hls) { hls.destroy(); hls = null; }
+
+  if (Hls.isSupported()) {
+    hls = new Hls({
+      enableWorker: true,
+      lowLatencyMode: true,
+      backBufferLength: 30,
+    });
+    hls.loadSource(url);
+    hls.attachMedia(video);
+
+    hls.on(Hls.Events.MANIFEST_PARSED, () => {
+      video.play().catch(() => {});
+    });
+
+    hls.on(Hls.Events.FRAG_LOADED, () => {
+      showLoader(false);
+      setStatus('live', `${NAMES[ch]} · שידור חי`);
+    });
+
+    hls.on(Hls.Events.ERROR, (_, data) => {
+      if (data.fatal) {
+        showLoader(false);
+        showError(ch, idx);
+      }
+    });
+
+    // Fallback timeout
+    setTimeout(() => {
+      if (loader.classList.contains('visible')) {
+        showLoader(false);
+        showError(ch, idx);
+      }
+    }, 12000);
+
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    // Safari native HLS
+    video.src = url;
+    video.addEventListener('loadedmetadata', () => {
+      showLoader(false);
+      setStatus('live', `${NAMES[ch]} · שידור חי`);
+      video.play().catch(() => {});
+    }, { once: true });
+    video.addEventListener('error', () => {
+      showLoader(false);
+      showError(ch, idx);
+    }, { once: true });
+  } else {
+    showLoader(false);
+    showError(ch, idx, 'הדפדפן שלך אינו תומך בשמעות HLS.');
+  }
+}
+
+function showLoader(v) {
+  loader.classList.toggle('visible', v);
+}
+
+function showError(ch, idx, msg) {
+  const next = idx + 1 < STREAMS[ch].length;
+  errMsg.innerHTML = msg || (
+    next
+      ? `הסטרים ${idx + 1} לא זמין.<br>ניסיון עם סטרים ${idx + 2}...`
+      : `כל הסטרימים של ערוץ ${ch} לא זמינים.<br>ניתן להזין URL ידני מטה.`
+  );
+
+  if (!msg && next) {
+    setTimeout(() => retryNext(), 1500);
+  } else {
+    errorOverlay.classList.add('visible');
+    document.getElementById('retryBtn').style.display = next ? 'block' : 'none';
+  }
+  setStatus('error', `שגיאה · ערוץ ${ch}`);
+}
+
+function hideError() {
+  errorOverlay.classList.remove('visible');
+}
+
+function retryNext() {
+  if (!currentCh) return;
+  const streams = STREAMS[currentCh];
+  const next = currentIdx + 1;
+  if (next < streams.length) {
+    hideError();
+    loadStream(streams[next], currentCh, next);
+  } else {
+    errorOverlay.classList.add('visible');
+    errMsg.innerHTML = `כל הסטרימים של ערוץ ${currentCh} אינם זמינים.<br>נסה URL ידני מטה.`;
+    document.getElementById('retryBtn').style.display = 'none';
+  }
+}
+
+function setStatus(type, text) {
+  statusDot.className = 'status-dot ' + type;
+  statusText.textContent = text;
+}
+
+function playCustomUrl() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) return;
+  if (!url.startsWith('http')) { alert('URL לא תקין'); return; }
+  currentCh = null;
+  document.querySelectorAll('.ch-btn').forEach(b => b.classList.remove('active'));
+  streamDots.innerHTML = '';
+  idleScreen.style.display = 'none';
+  showLoader(true);
+  setStatus('loading', 'טוען...');
+
+  if (hls) { hls.destroy(); hls = null; }
+
+  if (Hls.isSupported()) {
+    hls = new Hls();
+    hls.loadSource(url);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.MANIFEST_PARSED, () => { video.play().catch(()=>{}); });
+    hls.on(Hls.Events.FRAG_LOADED, () => { showLoader(false); setStatus('live', 'שידור חי · URL מותאם'); });
+    hls.on(Hls.Events.ERROR, (_, d) => {
+      if (d.fatal) { showLoader(false); showError(null, -1, 'לא ניתן לטעון את הסטרים. בדוק את ה-URL.'); }
+    });
+    setTimeout(() => {
+      if (loader.classList.contains('visible')) { showLoader(false); showError(null, -1, 'לא ניתן לטעון את הסטרים.'); }
+    }, 12000);
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = url;
+    video.load();
+    video.play().catch(()=>{});
+    setStatus('live', 'שידור חי');
+    showLoader(false);
+  }
+}
+
+// Enter key in URL input
+document.getElementById('urlInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') playCustomUrl();
+});
+</script>
 </body>
 </html>
-
