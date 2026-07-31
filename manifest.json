@@ -1,11 +1,11 @@
 {
-  "name": "רשימת קניות חכמה",
-  "short_name": "רשימה",
-  "description": "אפליקציית רשימת קניות חכמה ומהירה",
-  "start_url": "/SL5/",
+  "name": "טלוויזיה ישראלית חי",
+  "short_name": "טלוויזיה חי",
+  "description": "צפייה בשידור חי של ערוצי טלוויזיה ישראליים",
+  "start_url": "./",
   "display": "standalone",
-  "background_color": "#f4f7fa",
-  "theme_color": "#7367f0",
+  "background_color": "#080a0f",
+  "theme_color": "#080a0f",
   "orientation": "portrait",
   "icons": [
     {

@@ -1,9 +1,9 @@
-const CACHE_NAME = 'sl5-cache-v1';
+const CACHE_NAME = 'livetvil-cache-v1';
 const ASSETS = [
-  '/SL5/',
-  '/SL5/index.html',
-  '/SL5/manifest.json',
-  '/SL5/icon.png'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon.png'
 ];
 
 self.addEventListener('install', (event) => {

@@ -6,6 +6,7 @@
 <title>טלוויזיה ישראלית חי</title>
 <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="icon.png">
 <style>
   :root {
     --bg: #080a0f;
@@ -455,7 +456,9 @@
 <script>
 const STREAMS = {
   12: [
-    // ערוץ 12 - קשת (דורש טוקן - נסה את הבסיסי)
+    // ערוץ 12 - קשת: מראה ללא טוקן (הכתובות הרשמיות דורשות טיקט חד-פעמי מהשרת של קשת שלא ניתן להפיק מדף סטטי)
+    'http://stream.mcquack.net/294/index.m3u8',
+    // כתובות רשמיות - עלולות להיכשל אם הטוקן פג, השאר כגיבוי
     'https://mako-streaming.akamaized.net/stream/hls/live/2033791/k12n12wad/index.m3u8',
     'https://mako-streaming.akamaized.net/n12/hls/live/2103938/k12/index.m3u8',
     'https://mako-streaming.akamaized.net/direct/hls/live/2033791/k12dvr/index.m3u8',
