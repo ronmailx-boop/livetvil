@@ -13,11 +13,11 @@
     --surface: #0e1119;
     --surface2: #151b27;
     --border: rgba(255,255,255,0.07);
-    --accent12: #e8a020;
+    --accent11: #2dd4bf;
     --accent13: #3a8ef5;
     --text: #e8eaf0;
     --muted: #5a6478;
-    --glow12: rgba(232,160,32,0.35);
+    --glow11: rgba(45,212,191,0.35);
     --glow13: rgba(58,142,245,0.35);
   }
 
@@ -132,13 +132,13 @@
     border-radius: inherit;
   }
 
-  .ch-btn.ch12::before { background: radial-gradient(ellipse at 30% 50%, var(--glow12), transparent 70%); }
+  .ch-btn.ch11::before { background: radial-gradient(ellipse at 30% 50%, var(--glow11), transparent 70%); }
   .ch-btn.ch13::before { background: radial-gradient(ellipse at 30% 50%, var(--glow13), transparent 70%); }
 
   .ch-btn:hover::before,
   .ch-btn.active::before { opacity: 1; }
 
-  .ch-btn.active.ch12 { border-color: var(--accent12); box-shadow: 0 0 20px var(--glow12), inset 0 1px 0 rgba(232,160,32,0.2); }
+  .ch-btn.active.ch11 { border-color: var(--accent11); box-shadow: 0 0 20px var(--glow11), inset 0 1px 0 rgba(45,212,191,0.2); }
   .ch-btn.active.ch13 { border-color: var(--accent13); box-shadow: 0 0 20px var(--glow13), inset 0 1px 0 rgba(58,142,245,0.2); }
 
   .ch-btn:hover { transform: translateY(-1px); }
@@ -149,7 +149,7 @@
     line-height: 1;
     position: relative;
   }
-  .ch-btn.ch12 .ch-num { color: var(--accent12); }
+  .ch-btn.ch11 .ch-num { color: var(--accent11); }
   .ch-btn.ch13 .ch-num { color: var(--accent13); }
 
   .ch-name {
@@ -171,7 +171,7 @@
     border-radius: 20px;
     text-transform: uppercase;
   }
-  .ch-btn.ch12 .ch-tag { background: rgba(232,160,32,0.15); color: var(--accent12); border: 1px solid rgba(232,160,32,0.3); }
+  .ch-btn.ch11 .ch-tag { background: rgba(45,212,191,0.15); color: var(--accent11); border: 1px solid rgba(45,212,191,0.3); }
   .ch-btn.ch13 .ch-tag { background: rgba(58,142,245,0.15); color: var(--accent13); border: 1px solid rgba(58,142,245,0.3); }
 
   /* Video area */
@@ -375,7 +375,7 @@
     opacity: 0.4;
   }
   .sdot.active { opacity: 1; }
-  .sdot.ch12 { background: var(--accent12); }
+  .sdot.ch11 { background: var(--accent11); }
   .sdot.ch13 { background: var(--accent13); }
 
   /* Footer */
@@ -399,10 +399,10 @@
 </header>
 
 <div class="channel-bar">
-  <button class="ch-btn ch12" onclick="selectChannel(12)">
-    <span class="ch-tag">Keshet</span>
-    <div class="ch-num">12</div>
-    <div class="ch-name">קשת 12</div>
+  <button class="ch-btn ch11" onclick="selectChannel(11)">
+    <span class="ch-tag">Kan</span>
+    <div class="ch-num">11</div>
+    <div class="ch-name">כאן 11</div>
   </button>
   <button class="ch-btn ch13" onclick="selectChannel(13)">
     <span class="ch-tag">Reshet</span>
@@ -455,13 +455,12 @@
 
 <script>
 const STREAMS = {
-  12: [
-    // ערוץ 12 - קשת: מראה ללא טוקן (הכתובות הרשמיות דורשות טיקט חד-פעמי מהשרת של קשת שלא ניתן להפיק מדף סטטי)
-    'http://stream.mcquack.net/294/index.m3u8',
-    // כתובות רשמיות - עלולות להיכשל אם הטוקן פג, השאר כגיבוי
-    'https://mako-streaming.akamaized.net/stream/hls/live/2033791/k12n12wad/index.m3u8',
-    'https://mako-streaming.akamaized.net/n12/hls/live/2103938/k12/index.m3u8',
-    'https://mako-streaming.akamaized.net/direct/hls/live/2033791/k12dvr/index.m3u8',
+  11: [
+    // ערוץ 11 - כאן (השידור הציבורי): כתובת רשמית פתוחה, ללא טוקן
+    'https://kan11.media.kan.org.il/hls/live/2024514/2024514/master.m3u8',
+    // מראות גיבוי
+    'https://kancdn.medonecdn.net/livehls/oil/kancdn-live/live/kan11/live.livx/playlist.m3u8',
+    'http://stream.mcquack.net/293/index.m3u8',
   ],
   13: [
     'https://d18b0e6mopany4.cloudfront.net/out/v1/2f2bc414a3db4698a8e94b89eaf2da2a/index.m3u8',
@@ -471,8 +470,8 @@ const STREAMS = {
   ]
 };
 
-const COLORS = { 12: '#e8a020', 13: '#3a8ef5' };
-const NAMES  = { 12: 'קשת 12', 13: 'רשת 13' };
+const COLORS = { 11: '#2dd4bf', 13: '#3a8ef5' };
+const NAMES  = { 11: 'כאן 11', 13: 'רשת 13' };
 
 let currentCh = null;
 let currentIdx = 0;
